@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>반야심경 필사</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f2eee5;
+            font-family: 'Noto Serif TC', serif;
+            overflow: hidden;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        #content {
+            font-size: 25vw;
+            color: #1a1a1a;
+            text-align: center;
+            letter-spacing: -0.05em;
+        }
+
+        /* 글자 번호 스타일 */
+        #counter {
+            position: fixed;
+            bottom: 80px;
+            right: 50px;
+            font-size: 2rem;
+            color: #8e44ad;
+            font-weight: bold;
+        }
+
+        .instruction {
+            position: fixed;
+            bottom: 30px;
+            font-size: 16px;
+            color: #7f8c8d;
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 8px;
+            background: linear-gradient(to right, #8e44ad, #2c3e50);
+            transition: width 0.2s;
+        }
+
+        .space-hint {
+            font-size: 10vw;
+            color: #d5d0c5;
+        }
+    </style>
+</head>
+<body onclick="showNext()">
+
+    <div class="progress" id="progressBar"></div>
+    <div id="content">시작</div>
+    <div id="counter"></div>
+    <div class="instruction">화면 터치 또는 Enter 키를 눌러 필사하세요</div>
+
+    <script>
+        // 정정된 한자 원문 (오타 및 영문 제거 완료)
+        const mainText = "摩訶般若波羅蜜多心經 觀自在菩薩 行深般若波羅蜜多時 照見五蘊皆空 度一切苦厄 舍利子 色不異空 空不異色 色即是空 空即是色 受想行識 亦復如是 舍利子 是諸法空相 不生不滅 不垢不淨 不增不減 是故 空中無色 無受想行識 無眼耳鼻舌身意 無色聲香味觸法 無眼界 乃至 無意識界 無無明 亦無無明盡 乃至 無老死 亦無老死盡 無苦集滅道 無智亦無得 以無所得故 菩提薩埵 依般若波羅蜜多故 心無罣礙 無罣礙故 無有恐怖 遠離顛倒夢想 究竟涅槃 三世諸佛 依般若波羅蜜多故 得阿耨多羅三藐三菩提 故知般若波羅蜜多 是大神咒 是大明咒 是無上咒 是無等等咒 能除一切苦 真實不虛 故說般若波羅蜜多咒 即說咒曰";
+        const mantra = "揭諦揭諦 波羅揭諦 波羅僧揭諦 菩提薩婆訶";
+        const fullText = mainText + " " + mantra + " " + mantra + " " + mantra;
+
+        const chars = fullText.split("");
+        let currentIndex = -1;
+        let charCount = 0; // 공백 제외 글자수 카운트
+
+        function showNext() {
+            currentIndex++;
+            const contentDiv = document.getElementById('content');
+            const progressBar = document.getElementById('progressBar');
+            const counterDiv = document.getElementById('counter');
+
+            if (currentIndex < chars.length) {
+
+                const currentChar = chars[currentIndex];
+                
+                if (currentChar === " ") {
+                    contentDiv.innerHTML = '<span class="space-hint">〔 〕</span>';
+                    // 공백일 때는 번호를 갱신하지 않음
+                } else {
+                    charCount++; // 실 글자일 때만 카운트 증가
+                    contentDiv.innerText = currentChar;
+                    counterDiv.innerText = charCount;
+                }
+                
+                const progress = ((currentIndex + 1) / chars.length) * 100;
+                progressBar.style.width = progress + "%";
+            } else {
+                contentDiv.innerText = "끝";
+                counterDiv.innerText = "";
+                currentIndex = -1;
+                charCount = 0;
+            }
+        }
+
+        // 엔터 키 입력 이벤트 추가
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                showNext();
+            }
+        });
+    </script>
+</body>
+</html>
