@@ -1,115 +1,308 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>반야심경 필사</title>
+    <title>Zen Flow - Heart Sutra</title>
+    <link href="https://googleapis.com" rel="stylesheet">
     <style>
-        body {
+        :root {
+            --primary: #c0a080;
+            --bg: #0a0a0c;
+            --text: #e0e0e0;
+        }
+
+        body,
+        html {
             margin: 0;
             padding: 0;
+            height: 100%;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Noto Serif TC', serif;
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #f2eee5;
-            font-family: 'Noto Serif TC', serif;
-            overflow: hidden;
             user-select: none;
-            cursor: pointer;
         }
 
-        #content {
-            font-size: 25vw;
-            color: #1a1a1a;
-            text-align: center;
-            letter-spacing: -0.05em;
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0.6;
         }
 
-        /* 글자 번호 스타일 */
-        #counter {
-            position: fixed;
-            bottom: 80px;
-            right: 50px;
-            font-size: 2rem;
-            color: #8e44ad;
-            font-weight: bold;
-        }
-
-        .instruction {
-            position: fixed;
-            bottom: 30px;
-            font-size: 16px;
-            color: #7f8c8d;
-        }
-
-        .progress {
+        /* 상단 UI */
+        .header-ui {
             position: fixed;
             top: 0;
             left: 0;
-            height: 8px;
-            background: linear-gradient(to right, #8e44ad, #2c3e50);
-            transition: width 0.2s;
+            width: 100%;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+            z-index: 100;
         }
 
-        .space-hint {
-            font-size: 10vw;
-            color: #d5d0c5;
+        .progress-track {
+            flex-grow: 1;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        /* 메인 컨텐츠 */
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #char-display {
+            font-size: min(30vw, 40vh);
+            line-height: 1;
+            transition: transform 0.1s ease, opacity 0.1s ease;
+            text-shadow: 0 0 40px rgba(192, 160, 128, 0.4);
+        }
+
+        /* 하단 컨트롤 및 정보 */
+        .footer-ui {
+            position: fixed;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 50px;
+            box-sizing: border-box;
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            color: var(--primary);
+            z-index: 110;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+
+        /* 뒤로가기 버튼 스타일 */
+        .back-btn {
+            background: none;
+            border: 1px solid rgba(192, 160, 128, 0.3);
+            color: var(--primary);
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: 'Cinzel';
+            font-size: 14px;
+            transition: all 0.2s;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .back-btn:hover {
+            background: var(--primary);
+            color: var(--bg);
+        }
+
+        .back-btn:active {
+            transform: scale(0.9);
+        }
+
+        .void-circle {
+            width: 80px;
+            height: 80px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            animation: breathe 2s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.2;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.5;
+                box-shadow: 0 0 20px var(--primary);
+            }
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0.3;
+            font-size: 11px;
+            letter-spacing: 2px;
         }
     </style>
 </head>
-<body onclick="showNext()">
 
-    <div class="progress" id="progressBar"></div>
-    <div id="content">시작</div>
-    <div id="counter"></div>
-    <div class="instruction">화면 터치 또는 Enter 키를 눌러 필사하세요</div>
+<body>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="header-ui">
+        <span style="font-family: 'Cinzel'; letter-spacing: 2px;">HEART SUTRA</span>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <span id="percent" style="font-family: 'Cinzel'; width: 45px; text-align: right;">0%</span>
+    </div>
+
+    <div class="container" onclick="handleForward()">
+        <div id="char-display">始</div>
+    </div>
+
+    <div class="hint">CLICK TO NEXT · BACKSPACE TO PREV</div>
+
+    <div class="footer-ui">
+        <div class="stat-box">
+            <button class="back-btn" onclick="handleBack()">← BACK</button>
+            <span>CHAR COUNT</span>
+            <div class="stat-value" id="curIdx">000</div>
+        </div>
+        <div class="stat-box" style="text-align: right;">
+            <span>REMAINING</span>
+            <div class="stat-value" id="remainIdx">---</div>
+        </div>
+    </div>
 
     <script>
-        // 정정된 한자 원문 (오타 및 영문 제거 완료)
-        const mainText = "摩訶般若波羅蜜多心經 觀自在菩薩 行深般若波羅蜜多時 照見五蘊皆空 度一切苦厄 舍利子 色不異空 空不異色 色即是空 空即是色 受想行識 亦復如是 舍利子 是諸法空相 不生不滅 不垢不淨 不增不減 是故 空中無色 無受想行識 無眼耳鼻舌身意 無色聲香味觸法 無眼界 乃至 無意識界 無無明 亦無無明盡 乃至 無老死 亦無老死盡 無苦集滅道 無智亦無得 以無所得故 菩提薩埵 依般若波羅蜜多故 心無罣礙 無罣礙故 無有恐怖 遠離顛倒夢想 究竟涅槃 三世諸佛 依般若波羅蜜多故 得阿耨多羅三藐三菩提 故知般若波羅蜜多 是大神咒 是大明咒 是無上咒 是無等等咒 能除一切苦 真實不虛 故說般若波羅蜜多咒 即說咒曰";
-        const mantra = "揭諦揭諦 波羅揭諦 波羅僧揭諦 菩提薩婆訶";
-        const fullText = mainText + " " + mantra + " " + mantra + " " + mantra;
-
-        const chars = fullText.split("");
+        const mainText = "摩訶般若波羅蜜多心經 觀自在菩薩 行深般若波羅蜜多時 照見五蘊皆空 度一切苦厄 舍利子 色不異空 空不異色 色即是空 空即是色 受想行識 亦復如是 舍利子 是諸法空相 不生不滅 不垢不淨 不增不減 是故 空中無色 無受想行識 無眼耳鼻舌身意 無色聲香味觸法 無眼界 乃至 無意識界 無無明 亦無無明盡 乃至 無老死 亦無老死盡 無苦集滅道 無智亦無得 以無所得故 菩提薩埵 依般若波羅蜜多故 心無罣礙 無罣礙故 無有恐怖 遠離顛倒夢想 究竟涅槃 三世諸佛 依般若波羅蜜多故 得阿耨多羅三藐三菩提 故知般若波羅蜜多 是大神咒 是大明咒 是無上咒 是無等等咒 能除一切苦 真實不虛 故說般若波羅蜜多咒 即說咒曰 揭諦揭諦 波羅揭諦 波羅僧揭諦 菩提薩婆訶";
+        const chars = mainText.split("");
+        const totalCharCount = chars.filter(c => c !== " ").length;
+        
         let currentIndex = -1;
-        let charCount = 0; // 공백 제외 글자수 카운트
+        let activeCharCount = 0;
 
-        function showNext() {
-            currentIndex++;
-            const contentDiv = document.getElementById('content');
-            const progressBar = document.getElementById('progressBar');
-            const counterDiv = document.getElementById('counter');
+        // --- 기능 함수 ---
+        function updateDisplay() {
+            const display = document.getElementById('char-display');
+            const progress = document.getElementById('progressBar');
+            const percent = document.getElementById('percent');
+            const curIdxTxt = document.getElementById('curIdx');
+            const remainIdxTxt = document.getElementById('remainIdx');
 
-            if (currentIndex < chars.length) {
-
-                const currentChar = chars[currentIndex];
-                
-                if (currentChar === " ") {
-                    contentDiv.innerHTML = '<span class="space-hint">〔 〕</span>';
-                    // 공백일 때는 번호를 갱신하지 않음
+            if (currentIndex === -1) {
+                display.innerText = "시작";
+                activeCharCount = 0;
+            } else if (currentIndex < chars.length) {
+                const char = chars[currentIndex];
+                if (char === " ") {
+                    display.innerHTML = '<div class="void-circle"></div>';
                 } else {
-                    charCount++; // 실 글자일 때만 카운트 증가
-                    contentDiv.innerText = currentChar;
-                    counterDiv.innerText = charCount;
+                    display.innerText = char;
                 }
-                
-                const progress = ((currentIndex + 1) / chars.length) * 100;
-                progressBar.style.width = progress + "%";
             } else {
-                contentDiv.innerText = "끝";
-                counterDiv.innerText = "";
-                currentIndex = -1;
-                charCount = 0;
+                display.innerText = "끝";
             }
+
+            // UI 업데이트
+            const progVal = currentIndex < 0 ? 0 : Math.round(((currentIndex + 1) / chars.length) * 100);
+            progress.style.width = progVal + "%";
+            percent.innerText = progVal + "%";
+            curIdxTxt.innerText = String(activeCharCount).padStart(3, '0');
+            remainIdxTxt.innerText = String(Math.max(0, totalCharCount - activeCharCount)).padStart(3, '0');
         }
 
-        // 엔터 키 입력 이벤트 추가
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                showNext();
+        function handleForward() {
+            if (currentIndex >= chars.length) {
+                currentIndex = -1;
+                activeCharCount = 0;
+            } else {
+                currentIndex++;
+                if (currentIndex < chars.length && chars[currentIndex] !== " ") {
+                    activeCharCount++;
+                }
             }
+            triggerAnimate();
+            updateDisplay();
+        }
+
+        function handleBack() {
+            if (currentIndex <= -1) return;
+            
+            // 현재 글자가 공백이 아닐 때만 카운트 감소
+            if (currentIndex < chars.length && chars[currentIndex] !== " ") {
+                activeCharCount = Math.max(0, activeCharCount - 1);
+            }
+            
+            currentIndex--;
+            triggerAnimate();
+            updateDisplay();
+        }
+
+        function triggerAnimate() {
+            const display = document.getElementById('char-display');
+            display.style.transform = "scale(0.98)";
+            display.style.opacity = "0.7";
+            setTimeout(() => {
+                display.style.transform = "scale(1)";
+                display.style.opacity = "1";
+            }, 50);
+        }
+
+        // --- 배경 파티클 (생략 가능하나 유지) ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        class Particle {
+            constructor() { this.reset(); }
+            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.size = Math.random() * 1.5; this.speedX = (Math.random() - 0.5) * 0.3; this.speedY = (Math.random() - 0.5) * 0.3; this.opacity = Math.random() * 0.5; }
+            update() { this.x += this.speedX; this.y += this.speedY; if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset(); }
+            draw() { ctx.fillStyle = `rgba(192, 160, 128, ${this.opacity})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+        }
+        function init() { resize(); for (let i = 0; i < 60; i++) particles.push(new Particle()); animate(); }
+        function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); }
+
+        // --- 이벤트 리스너 ---
+        window.addEventListener('resize', resize);
+        window.addEventListener('keydown', (e) => { 
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleForward(); }
+            if (e.key === 'Backspace' || e.key === 'ArrowLeft') { e.preventDefault(); handleBack(); }
         });
+
+        init();
+        updateDisplay();
     </script>
 </body>
+
 </html>
