@@ -1,760 +1,173 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zen Flow - Heart Sutra</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <title>반야심경 필사 - 정전본</title>
+    <link href="https://googleapis.com" rel="stylesheet">
     <style>
         :root {
-            --primary: #c0a080;
-            --bg: #0a0a0c;
-            --text: #e0e0e0;
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --accent-color: #bb86fc;
+            --halo-color: rgba(187, 134, 252, 0.4);
         }
 
-        body, html {
-            margin: 0; padding: 0; height: 100%;
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Noto Serif TC', serif;
-            overflow: hidden;
+        body {
+            margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
-            user-select: none; -webkit-user-select: none;
+            height: 100vh; background-color: var(--bg-color);
+            color: var(--text-color); font-family: 'Noto Serif KR', serif;
+            overflow: hidden; user-select: none;
             touch-action: manipulation;
         }
 
-        #canvas {
-            position: absolute; top: 0; left: 0;
-            z-index: 1; opacity: 0.4; pointer-events: none;
+        /* 터치 영역 레이어 */
+        .click-zone {
+            position: fixed; top: 0; bottom: 0; width: 50%; z-index: 5;
+            cursor: pointer;
         }
+        #left-zone { left: 0; }
+        #right-zone { right: 0; }
 
-        /* 상단 UI */
-        .header-ui {
-            position: fixed; top: 0; left: 0; width: 100%;
-            height: 60px; display: flex; align-items: center;
-            padding: 0 20px; box-sizing: border-box;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            z-index: 100;
-        }
-
-        .progress-track {
-            flex-grow: 1; height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 0 15px; position: relative;
-        }
-
-        .progress-fill {
-            height: 100%; width: 0%;
-            background: var(--primary);
-            box-shadow: 0 0 8px var(--primary);
-            transition: width 0.3s ease;
-        }
-
-        /* 메인 컨텐츠 */
-        .container {
-            position: relative; z-index: 10;
-            width: 100%; height: 100%;
+        #display-container {
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
+            width: 100%; gap: clamp(10px, 5vw, 40px);
+            z-index: 1;
         }
 
-        #char-display {
-            font-size: clamp(80px, 35vw, 40vh);
-            line-height: 1;
-            text-shadow: 0 0 30px rgba(192, 160, 128, 0.3);
-            transition: transform 0.1s ease, opacity 0.1s ease;
-            display: flex; align-items: center; justify-content: center;
+        .char-unit {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; text-align: center;
+            transition: all 0.3s ease-in-out;
+            min-width: 120px;
         }
 
-        /* 하단 UI */
-        .footer-ui {
-            position: fixed; bottom: 30px; width: 100%;
-            display: flex; justify-content: space-between; align-items: flex-end;
-            padding: 0 30px; box-sizing: border-box;
-            font-family: 'Cinzel', serif; font-size: 10px;
-            color: var(--primary); z-index: 110;
-            pointer-events: none;
+        /* 선명한 중앙 글자와 맥동하는 후광 */
+        #current-char {
+            font-size: clamp(4rem, 22vw, 10rem);
+            font-weight: 700;
+            opacity: 1;
+            transform: scale(1.15);
+            filter: drop-shadow(0 0 15px var(--halo-color));
+            animation: halo-pulse 3s infinite ease-in-out;
         }
 
-        .stat-box { display: flex; flex-direction: column; gap: 4px; pointer-events: auto; }
-        .stat-value { font-size: 16px; font-weight: bold; opacity: 0.8; }
-
-        .back-btn {
-            background: rgba(192, 160, 128, 0.05);
-            border: 1px solid rgba(192, 160, 128, 0.3);
-            color: var(--primary); padding: 6px 12px;
-            cursor: pointer; font-family: 'Cinzel'; font-size: 11px;
-            border-radius: 3px; transition: 0.2s;
-        }
-        .back-btn:active { background: var(--primary); color: var(--bg); }
-
-        .void-circle {
-            width: 60px; height: 60px;
-            border: 2px solid var(--primary); border-radius: 50%;
-            animation: breathe 2s infinite ease-in-out;
+        @keyframes halo-pulse {
+            0%, 100% { filter: drop-shadow(0 0 15px var(--halo-color)); }
+            50% { filter: drop-shadow(0 0 35px var(--halo-color)); }
         }
 
-        @keyframes breathe {
-            0%, 100% { transform: scale(1); opacity: 0.2; }
-            50% { transform: scale(1.1); opacity: 0.5; box-shadow: 0 0 15px var(--primary); }
+        .side-char {
+            font-size: clamp(2rem, 11vw, 5rem);
+            opacity: 0.15;
+            transform: scale(0.85);
         }
 
-        .hint {
-            position: fixed; bottom: 15px; left: 50%;
-            transform: translateX(-50%); opacity: 0.3;
-            font-size: 9px; letter-spacing: 1px; z-index: 50;
+        ruby { ruby-position: under; }
+        rt {
+            font-size: 0.25em; color: rgba(255,255,255,0.4);
+            font-weight: 400; padding-top: 0.5rem;
+        }
+        #current-char rt { color: var(--accent-color); opacity: 1; }
+
+        .circle {
+            width: 45px; height: 45px;
+            border: 3px solid var(--accent-color); border-radius: 50%;
+            box-shadow: 0 0 15px var(--halo-color);
         }
 
-        @media (max-width: 600px) {
-            #char-display { font-size: 45vw; }
-            .footer-ui { padding: 0 20px; }
+        .progress-container {
+            position: fixed; top: 0; width: 100%; height: 4px;
+            background: rgba(255,255,255,0.1); z-index: 10;
+        }
+        .progress { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.3s; }
+
+        #counter {
+            position: fixed; bottom: 30px; right: 30px;
+            font-size: 1.1rem; color: var(--accent-color); font-weight: bold;
+            opacity: 0.5; z-index: 10;
         }
     </style>
 </head>
 <body>
 
-    <canvas id="canvas"></canvas>
+    <div class="progress-container"><div class="progress" id="progressBar"></div></div>
+    
+    <div id="left-zone" class="click-zone" onclick="changeChar(-1)"></div>
+    <div id="right-zone" class="click-zone" onclick="changeChar(1)"></div>
 
-    <div class="header-ui">
-        <span style="font-family: 'Cinzel'; font-size: 12px;">HEART SUTRA</span>
-        <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
-        <span id="percent" style="font-family: 'Cinzel'; width: 35px; text-align: right; font-size: 12px;">0%</span>
+    <div id="display-container">
+        <div id="prev-char" class="char-unit side-char"></div>
+        <div id="current-char" class="char-unit">시작</div>
+        <div id="next-char" class="char-unit side-char"></div>
     </div>
 
-    <div class="container" id="mainContainer">
-        <div id="char-display">始</div>
-    </div>
-
-    <div class="hint">TAP TO NEXT</div>
-
-    <div class="footer-ui">
-        <div class="stat-box">
-            <button class="back-btn" id="backBtn">← BACK</button>
-            <div class="stat-value" id="curIdx">000</div>
-        </div>
-        <div class="stat-box" style="text-align: right;">
-            <span>REMAIN</span>
-            <div class="stat-value" id="remainIdx">---</div>
-        </div>
-    </div>
+    <div id="counter">0</div>
 
     <script>
-        const mainText = "摩訶般若波羅蜜多心經 觀自在菩薩 行深般若波羅蜜多時 照見五蘊皆空 度一切苦厄 舍利子 色不異空 空不異色 色即은空 空即은色 受想行識 亦復如是 舍利子 是諸法空相 不生不滅 不垢不淨 不增不減 是故 空中無色 無受想行識 無眼耳鼻舌身意 無色聲香味觸法 無眼界 乃至 無意識界 無無明 亦無無明盡 乃至 無老死 亦無老死盡 無苦集滅道 無智亦無得 以無所得故 菩提薩埵 依般若波羅蜜多故 心無罣礙 無罣礙故 無有恐怖 遠離顛倒夢想 究竟涅槃 三世諸佛 依般若波羅蜜多故 得阿耨多羅三藐三菩提 故知般若波羅蜜多 是大神咒 是大明咒 是無上咒 是無等等咒 能除一切苦 真實不虛 故說般若波羅蜜多咒 即說咒曰 揭諦揭諦 波羅揭諦 波羅僧揭諦 菩提薩婆訶";
-        const chars = mainText.split("");
-        const totalCharCount = chars.filter(c => c !== " ").length;
+        // [검수완료] 한글이 완전히 제거된 정전 한자 데이터
+        const fullRawText = "摩訶般若波羅蜜多心經 觀自在菩薩 行深般若波羅蜜多時 照見五蘊皆空 度一切苦厄 舍利子 色不異空 空不異色 色即是空 空即是色 受想行識 亦復如是 舍利子 是諸法空相 不生不滅 不垢不淨 不增不減 是故 空中無色 無受想行識 無眼耳鼻舌身意 無色聲香味觸法 無眼界 乃至 無意識界 無無明 亦無無明盡 乃至 無老死 亦無老死盡 無苦集滅道 無智亦無得 以無所得故 菩提薩埵 依般若波羅蜜多故 心無罣礙 無罣礙故 無有恐怖 遠離顛倒夢想 究竟涅槃 三世諸佛 依般若波羅蜜多故 得阿耨多羅三藐三菩提 故知般若波羅蜜多 是大神咒 是大明咒 是無上咒 是無等等咒 能除一切苦 真實不虛 故說般若波羅蜜多咒 即說咒曰 揭諦揭諦 波羅揭諦 波羅僧揭諦 菩提薩婆訶";
+        
+        const kSoundBase = "마하반야바라밀다심경 관자재보살 행심반야바라밀다시 조견오온개공 도일체고액 사리자 색불이공 공불이색 색즉시공 공즉시색 수상행식 역부여시 사리자 시제법공상 불생불멸 불구부정 부증불감 시고 공중무색 무수상행식 무안이비설신이 무색성향미촉법 무안계 내지 무의식계 무무명 역무무명진 내지 무노사 역무노사진 무고집멸도 무지역무득 이무소득고 보리살타 의반야바라밀다고 심무가애 무가애고 무유공포 원리전도몽상 구경열반 삼세제불 의반야바라밀다고 득아뇩다라삼먁삼보리 고지반야바라밀다 시대신주 시대명주 시무상주 시무등등주 능제일체고 진실불허 고설반야바라밀다주 즉설주왈 아제아제 바라아제 바라승아제 모지사바하";
+
+        // 데이터 정제 로직
+        const hChars = fullRawText.split("");
+        const kChars = kSoundBase.replace(/\s/g, "").split("");
         
         let currentIndex = -1;
-        let activeCharCount = 0;
 
-        const display = document.getElementById('char-display');
-        const progressBar = document.getElementById('progressBar');
-        const percentTxt = document.getElementById('percent');
-        const curIdxTxt = document.getElementById('curIdx');
-        const remainIdxTxt = document.getElementById('remainIdx');
-
-        function updateDisplay() {
-            // 화면 초기화 후 텍스트 삽입 (겹침 방지)
-            display.innerHTML = ""; 
-
-            if (currentIndex === -1) {
-                display.innerText = "始";
-                activeCharCount = 0;
-            } else if (currentIndex < chars.length) {
-                const char = chars[currentIndex];
-                if (char === " ") {
-                    const circle = document.createElement('div');
-                    circle.className = 'void-circle';
-                    display.appendChild(circle);
-                } else {
-                    display.innerText = char;
-                }
-            } else {
-                display.innerText = "終";
-            }
-
-            // 숫자 및 게이지 업데이트
-            const progVal = currentIndex < 0 ? 0 : Math.round(((currentIndex + 1) / chars.length) * 100);
-            progressBar.style.width = progVal + "%";
-            percentTxt.innerText = progVal + "%";
-            curIdxTxt.innerText = String(activeCharCount).padStart(3, '0');
-            remainIdxTxt.innerText = String(Math.max(0, totalCharCount - activeCharCount)).padStart(3, '0');
+        function getRealCharCount(index) {
+            if (index < 0) return 0;
+            return hChars.slice(0, index + 1).join("").replace(/\s/g, "").length;
         }
 
-        function handleForward() {
-            if (currentIndex >= chars.length) {
-                currentIndex = -1;
-                activeCharCount = 0;
-            } else {
-                currentIndex++;
-                if (currentIndex < chars.length && chars[currentIndex] !== " ") {
-                    activeCharCount++;
-                }
-            }
-            animateChar();
-            updateDisplay();
-        }
-
-        function handleBack(e) {
-            if (e) e.stopPropagation();
-            if (currentIndex <= -1) return;
-            if (currentIndex < chars.length && chars[currentIndex] !== " ") {
-                activeCharCount = Math.max(0, activeCharCount - 1);
-            }
-            currentIndex--;
-            animateChar();
-            updateDisplay();
-        }
-
-        function animateChar() {
-            display.style.transform = "scale(0.95)";
-            display.style.opacity = "0.5";
-            setTimeout(() => {
-                display.style.transform = "scale(1)";
-                display.style.opacity = "1";
-            }, 50);
-        }
-
-        // 이벤트 바인딩
-        document.getElementById('mainContainer').addEventListener('click', handleForward);
-        document.getElementById('backBtn').addEventListener('click', handleBack);
-        window.addEventListener('keydown', (e) => {
-            if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') handleForward();
-            if (e.key === 'Backspace' || e.key === 'ArrowLeft') handleBack();
-        });
-
-        // 배경 파티클
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        class Particle {
-            constructor() { this.reset(); }
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 1.5;
-                this.speedX = (Math.random() - 0.5) * 0.2;
-                this.speedY = (Math.random() - 0.5) * 0.2;
-                this.opacity = Math.random() * 0.5;
-            }
-            update() {
-                this.x += this.speedX; this.y += this.speedY;
-                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
-            }
-            draw() {
-                ctx.fillStyle = `rgba(192, 160, 128, ${this.opacity})`;
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
-            }
-        }
-        function init() { resize(); particles = []; for (let i = 0; i < 40; i++) particles.push(new Particle()); }
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => { p.update(); p.draw(); });
-            requestAnimationFrame(animate);
-        }
-        window.addEventListener('resize', resize);
-        init(); animate(); updateDisplay();
-    </script>
-</body>
-</html>
-            left: 0;
-            width: 100%;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            box-sizing: border-box;
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
-            z-index: 100;
-        }
-
-        .progress-track {
-            flex-grow: 1;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 0 15px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            background: var(--primary);
-            box-shadow: 0 0 10px var(--primary);
-            transition: width 0.3s ease;
-        }
-
-        /* 메인 컨텐츠 */
-        .container {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #char-display {
-            font-size: min(35vw, 45vh);
-            line-height: 1;
-            transition: transform 0.1s ease, opacity 0.1s ease;
-            text-shadow: 0 0 40px rgba(192, 160, 128, 0.4);
-            will-change: transform, opacity;
-        }
-
-        /* 하단 컨트롤 및 정보 */
-        .footer-ui {
-            position: fixed;
-            bottom: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding: 0 30px;
-            box-sizing: border-box;
-            font-family: 'Cinzel', serif;
-            font-size: 11px;
-            color: var(--primary);
-            z-index: 110;
-            pointer-events: none; /* 하단 텍스트는 클릭 무시 */
-        }
-
-        .stat-box {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            pointer-events: auto; /* 버튼과 숫자는 클릭 가능 */
-        }
-
-        .stat-value {
-            font-size: 18px;
-            font-weight: bold;
-            opacity: 0.8;
-        }
-
-        /* 뒤로가기 버튼 */
-        .back-btn {
-            background: rgba(192, 160, 128, 0.05);
-            border: 1px solid rgba(192, 160, 128, 0.3);
-            color: var(--primary);
-            padding: 10px 18px;
-            cursor: pointer;
-            font-family: 'Cinzel';
-            font-size: 12px;
-            transition: all 0.2s;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-        }
-
-        .back-btn:hover {
-            background: var(--primary);
-            color: var(--bg);
-        }
-
-        .void-circle {
-            width: 60px;
-            height: 60px;
-            border: 2px solid var(--primary);
-            border-radius: 50%;
-            display: inline-block;
-            animation: breathe 2s infinite ease-in-out;
-        }
-
-        @keyframes breathe {
-            0%, 100% { transform: scale(1); opacity: 0.2; }
-            50% { transform: scale(1.1); opacity: 0.5; box-shadow: 0 0 20px var(--primary); }
-        }
-
-        .hint {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0.4;
-            font-size: 10px;
-            letter-spacing: 1px;
-            white-space: nowrap;
-            z-index: 50;
-        }
-
-        /* --- 반응형 미디어 쿼리 --- */
-        @media (max-width: 768px) {
-            .header-ui { padding: 0 15px; font-size: 12px; }
-            .footer-ui { padding: 0 20px; bottom: 20px; }
-            .stat-value { font-size: 16px; }
-            .back-btn { padding: 8px 12px; font-size: 10px; }
-            #char-display { font-size: 40vw; } /* 모바일에서 글자 비중 확대 */
-            .hint { display: none; } /* 모바일은 힌트 숨김 (터치 중심) */
-        }
-
-        @media (max-height: 500px) {
-            /* 가로 모드 대응 */
-            .footer-ui { bottom: 10px; }
-            .back-btn { margin-bottom: 2px; padding: 5px 10px; }
-            #char-display { font-size: 35vh; }
-        }
-    </style>
-</head>
-
-<body>
-
-    <canvas id="canvas"></canvas>
-
-    <div class="header-ui">
-        <span style="font-family: 'Cinzel'; letter-spacing: 1px;">HEART SUTRA</span>
-        <div class="progress-track">
-            <div class="progress-fill" id="progressBar"></div>
-        </div>
-        <span id="percent" style="font-family: 'Cinzel'; width: 40px; text-align: right;">0%</span>
-    </div>
-
-    <div class="container" onclick="handleForward()">
-        <div id="char-display">始</div>
-    </div>
-
-    <div class="hint">CLICK TO NEXT · BACKSPACE TO PREV</div>
-
-    <div class="footer-ui">
-        <div class="stat-box">
-            <button class="back-btn" onclick="event.stopPropagation(); handleBack();">← BACK</button>
-            <span>COUNT</span>
-            <div class="stat-value" id="curIdx">000</div>
-        </div>
-        <div class="stat-box" style="text-align: right;">
-            <span>REMAIN</span>
-            <div class="stat-value" id="remainIdx">---</div>
-        </div>
-    </div>
-
-    <script>
-        const mainText = "摩訶般若波羅蜜多心經 觀自在菩薩 行深般若波羅蜜多時 照見五蘊皆空 度一切苦厄 舍利子 色不異空 空不異色 色即是空 空即은色 受想行識 亦復如是 舍利子 是諸法空相 不生不滅 不垢不淨 不增不減 是故 空中無色 無受想行識 無眼耳鼻舌身意 無色聲香味觸法 無眼界 乃至 無意識界 無無明 亦無無明盡 乃至 無老死 亦無老死盡 無苦集滅道 無智亦無得 以無所得故 菩提薩埵 依般若波羅蜜多故 心無罣礙 無罣礙故 無有恐怖 遠離顛倒夢想 究竟涅槃 三世諸佛 依般若波羅蜜多故 得阿耨多羅三藐三菩提 故知般若波羅蜜多 是大神咒 是大明咒 是無上咒 是無等等咒 能除一切苦 真實不虛 故說般若波羅蜜多咒 即說咒曰 揭諦揭諦 波羅揭諦 波羅僧揭諦 菩提薩婆訶";
-        const chars = mainText.split("");
-        const totalCharCount = chars.filter(c => c !== " ").length;
-        
-        let currentIndex = -1;
-        let activeCharCount = 0;
-
-        function updateDisplay() {
-            const display = document.getElementById('char-display');
-            const progress = document.getElementById('progressBar');
-            const percent = document.getElementById('percent');
-            const curIdxTxt = document.getElementById('curIdx');
-            const remainIdxTxt = document.getElementById('remainIdx');
-
-            if (currentIndex === -1) {
-                display.innerText = "始";
-                activeCharCount = 0;
-            } else if (currentIndex < chars.length) {
-                const char = chars[currentIndex];
-                if (char === " ") {
-                    display.innerHTML = '<div class="void-circle"></div>';
-                } else {
-                    display.innerText = char;
-                }
-            } else {
-                display.innerText = "終";
-            }
-
-            const progVal = currentIndex < 0 ? 0 : Math.round(((currentIndex + 1) / chars.length) * 100);
-            progress.style.width = progVal + "%";
-            percent.innerText = progVal + "%";
-            curIdxTxt.innerText = String(activeCharCount).padStart(3, '0');
-            remainIdxTxt.innerText = String(Math.max(0, totalCharCount - activeCharCount)).padStart(3, '0');
-        }
-
-        function handleForward() {
-            if (currentIndex >= chars.length) {
-                currentIndex = -1;
-                activeCharCount = 0;
-            } else {
-                currentIndex++;
-                if (currentIndex < chars.length && chars[currentIndex] !== " ") {
-                    activeCharCount++;
-                }
-            }
-            triggerAnimate();
-            updateDisplay();
-        }
-
-        function handleBack() {
-            if (currentIndex <= -1) return;
-            if (currentIndex < chars.length && chars[currentIndex] !== " ") {
-                activeCharCount = Math.max(0, activeCharCount - 1);
-            }
-            currentIndex--;
-            triggerAnimate();
-            updateDisplay();
-        }
-
-        function triggerAnimate() {
-            const display = document.getElementById('char-display');
-            display.style.transform = "scale(0.95)";
-            display.style.opacity = "0.5";
-            setTimeout(() => {
-                display.style.transform = "scale(1)";
-                display.style.opacity = "1";
-            }, 50);
-        }
-
-        // --- 파티클 시스템 ---
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        
-        function resize() { 
-            canvas.width = window.innerWidth; 
-            canvas.height = window.innerHeight; 
-        }
-
-        class Particle {
-            constructor() { this.reset(); }
-            reset() { 
-                this.x = Math.random() * canvas.width; 
-                this.y = Math.random() * canvas.height; 
-                this.size = Math.random() * 1.2; 
-                this.speedX = (Math.random() - 0.5) * 0.2; 
-                this.speedY = (Math.random() - 0.5) * 0.2; 
-                this.opacity = Math.random() * 0.5; 
-            }
-            update() { 
-                this.x += this.speedX; 
-                this.y += this.speedY; 
-                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset(); 
-            }
-            draw() { 
-                ctx.fillStyle = `rgba(192, 160, 128, ${this.opacity})`; 
-                ctx.beginPath(); 
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); 
-                ctx.fill(); 
-            }
-        }
-
-        function init() { 
-            resize(); 
-            particles = [];
-            for (let i = 0; i < 50; i++) particles.push(new Particle()); 
-        }
-
-        function animate() { 
-            ctx.clearRect(0, 0, canvas.width, canvas.height); 
-            particles.forEach(p => { p.update(); p.draw(); }); 
-            requestAnimationFrame(animate); 
-        }
-
-        window.addEventListener('resize', () => { resize(); });
-        window.addEventListener('keydown', (e) => { 
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleForward(); }
-            if (e.key === 'Backspace' || e.key === 'ArrowLeft') { e.preventDefault(); handleBack(); }
-        });
-
-        init();
-        animate();
-        updateDisplay();
-    </script>
-</body>
-
-</html>
-            gap: 4px;
-        }
-
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            opacity: 0.8;
-        }
-
-        /* 뒤로가기 버튼 스타일 */
-        .back-btn {
-            background: none;
-            border: 1px solid rgba(192, 160, 128, 0.3);
-            color: var(--primary);
-            padding: 8px 15px;
-            cursor: pointer;
-            font-family: 'Cinzel';
-            font-size: 14px;
-            transition: all 0.2s;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-
-        .back-btn:hover {
-            background: var(--primary);
-            color: var(--bg);
-        }
-
-        .back-btn:active {
-            transform: scale(0.9);
-        }
-
-        .void-circle {
-            width: 80px;
-            height: 80px;
-            border: 2px solid var(--primary);
-            border-radius: 50%;
-            display: inline-block;
-            animation: breathe 2s infinite ease-in-out;
-        }
-
-        @keyframes breathe {
-
-            0%,
-            100% {
-                transform: scale(1);
-                opacity: 0.2;
-            }
-
-            50% {
-                transform: scale(1.1);
-                opacity: 0.5;
-                box-shadow: 0 0 20px var(--primary);
-            }
-        }
-
-        .hint {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0.3;
-            font-size: 11px;
-            letter-spacing: 2px;
-        }
-    </style>
-</head>
-
-<body>
-
-    <canvas id="canvas"></canvas>
-
-    <div class="header-ui">
-        <span style="font-family: 'Cinzel'; letter-spacing: 2px;">HEART SUTRA</span>
-        <div class="progress-track">
-            <div class="progress-fill" id="progressBar"></div>
-        </div>
-        <span id="percent" style="font-family: 'Cinzel'; width: 45px; text-align: right;">0%</span>
-    </div>
-
-    <div class="container" onclick="handleForward()">
-        <div id="char-display">始</div>
-    </div>
-
-    <div class="hint">CLICK TO NEXT · BACKSPACE TO PREV</div>
-
-    <div class="footer-ui">
-        <div class="stat-box">
-            <button class="back-btn" onclick="handleBack()">← BACK</button>
-            <span>CHAR COUNT</span>
-            <div class="stat-value" id="curIdx">000</div>
-        </div>
-        <div class="stat-box" style="text-align: right;">
-            <span>REMAINING</span>
-            <div class="stat-value" id="remainIdx">---</div>
-        </div>
-    </div>
-
-    <script>
-        const mainText = "摩訶般若波羅蜜多心經 觀自在菩薩 行深般若波羅蜜多時 照見五蘊皆空 度一切苦厄 舍利子 色不異空 空不異色 色即是空 空即是色 受想行識 亦復如是 舍利子 是諸法空相 不生不滅 不垢不淨 不增不減 是故 空中無色 無受想行識 無眼耳鼻舌身意 無色聲香味觸法 無眼界 乃至 無意識界 無無明 亦無無明盡 乃至 無老死 亦無老死盡 無苦集滅道 無智亦無得 以無所得故 菩提薩埵 依般若波羅蜜多故 心無罣礙 無罣礙故 無有恐怖 遠離顛倒夢想 究竟涅槃 三世諸佛 依般若波羅蜜多故 得阿耨多羅三藐三菩提 故知般若波羅蜜多 是大神咒 是大明咒 是無上咒 是無等等咒 能除一切苦 真實不虛 故說般若波羅蜜多咒 即說咒曰 揭諦揭諦 波羅揭諦 波羅僧揭諦 菩提薩婆訶";
-        const chars = mainText.split("");
-        const totalCharCount = chars.filter(c => c !== " ").length;
-        
-        let currentIndex = -1;
-        let activeCharCount = 0;
-
-        // --- 기능 함수 ---
-        function updateDisplay() {
-            const display = document.getElementById('char-display');
-            const progress = document.getElementById('progressBar');
-            const percent = document.getElementById('percent');
-            const curIdxTxt = document.getElementById('curIdx');
-            const remainIdxTxt = document.getElementById('remainIdx');
-
-            if (currentIndex === -1) {
-                display.innerText = "시작";
-                activeCharCount = 0;
-            } else if (currentIndex < chars.length) {
-                const char = chars[currentIndex];
-                if (char === " ") {
-                    display.innerHTML = '<div class="void-circle"></div>';
-                } else {
-                    display.innerText = char;
-                }
-            } else {
-                display.innerText = "끝";
-            }
-
-            // UI 업데이트
-            const progVal = currentIndex < 0 ? 0 : Math.round(((currentIndex + 1) / chars.length) * 100);
-            progress.style.width = progVal + "%";
-            percent.innerText = progVal + "%";
-            curIdxTxt.innerText = String(activeCharCount).padStart(3, '0');
-            remainIdxTxt.innerText = String(Math.max(0, totalCharCount - activeCharCount)).padStart(3, '0');
-        }
-
-        function handleForward() {
-            if (currentIndex >= chars.length) {
-                currentIndex = -1;
-                activeCharCount = 0;
-            } else {
-                currentIndex++;
-                if (currentIndex < chars.length && chars[currentIndex] !== " ") {
-                    activeCharCount++;
-                }
-            }
-            triggerAnimate();
-            updateDisplay();
-        }
-
-        function handleBack() {
-            if (currentIndex <= -1) return;
+        function getCharHTML(index) {
+            if (index < 0 || index >= hChars.length) return "";
+            const h = hChars[index];
+            if (h === " ") return '<div class="circle"></div>';
             
-            // 현재 글자가 공백이 아닐 때만 카운트 감소
-            if (currentIndex < chars.length && chars[currentIndex] !== " ") {
-                activeCharCount = Math.max(0, activeCharCount - 1);
+            // 실 글자 인덱스 추출 및 한글 매칭
+            const textBefore = hChars.slice(0, index).join("").replace(/\s/g, "");
+            const k = kChars[textBefore.length] || "";
+            return `<ruby>${h}<rt>${k}</rt></ruby>`;
+        }
+
+        function changeChar(step) {
+            const nextIndex = currentIndex + step;
+            if (nextIndex < -1 || nextIndex >= hChars.length) return;
+            currentIndex = nextIndex;
+            render();
+        }
+
+        function render() {
+            const prevDiv = document.getElementById('prev-char');
+            const currDiv = document.getElementById('current-char');
+            const nextDiv = document.getElementById('next-char');
+            const progressBar = document.getElementById('progressBar');
+            const counterDiv = document.getElementById('counter');
+
+            if (currentIndex === -1) {
+                prevDiv.innerHTML = "";
+                currDiv.innerHTML = "시작";
+                nextDiv.innerHTML = getCharHTML(0);
+                counterDiv.innerText = "0";
+                progressBar.style.width = "0%";
+            } else {
+                prevDiv.innerHTML = getCharHTML(currentIndex - 1);
+                currDiv.innerHTML = getCharHTML(currentIndex);
+                nextDiv.innerHTML = getCharHTML(currentIndex + 1);
+                counterDiv.innerText = getRealCharCount(currentIndex);
+                progressBar.style.width = ((currentIndex + 1) / hChars.length * 100) + "%";
             }
-            
-            currentIndex--;
-            triggerAnimate();
-            updateDisplay();
         }
 
-        function triggerAnimate() {
-            const display = document.getElementById('char-display');
-            display.style.transform = "scale(0.98)";
-            display.style.opacity = "0.7";
-            setTimeout(() => {
-                display.style.transform = "scale(1)";
-                display.style.opacity = "1";
-            }, 50);
-        }
-
-        // --- 배경 파티클 (생략 가능하나 유지) ---
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        class Particle {
-            constructor() { this.reset(); }
-            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.size = Math.random() * 1.5; this.speedX = (Math.random() - 0.5) * 0.3; this.speedY = (Math.random() - 0.5) * 0.3; this.opacity = Math.random() * 0.5; }
-            update() { this.x += this.speedX; this.y += this.speedY; if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset(); }
-            draw() { ctx.fillStyle = `rgba(192, 160, 128, ${this.opacity})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
-        }
-        function init() { resize(); for (let i = 0; i < 60; i++) particles.push(new Particle()); animate(); }
-        function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); }
-
-        // --- 이벤트 리스너 ---
-        window.addEventListener('resize', resize);
         window.addEventListener('keydown', (e) => { 
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleForward(); }
-            if (e.key === 'Backspace' || e.key === 'ArrowLeft') { e.preventDefault(); handleBack(); }
+            if (['ArrowRight', ' ', 'Enter'].includes(e.key)) changeChar(1);
+            if (['ArrowLeft', 'Backspace'].includes(e.key)) changeChar(-1);
         });
 
-        init();
-        updateDisplay();
+        render();
     </script>
 </body>
-
 </html>
