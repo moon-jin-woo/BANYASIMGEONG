@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>반야심경 필사 - 정전본</title>
+    <!-- 구글 폰트 연결 수정 -->
     <link href="https://googleapis.com" rel="stylesheet">
     <style>
         :root {
@@ -19,74 +20,72 @@
             height: 100vh; background-color: var(--bg-color);
             color: var(--text-color); font-family: 'Noto Serif KR', serif;
             overflow: hidden; user-select: none;
-            touch-action: manipulation;
+            touch-action: none; /* 스크롤 방지 */
         }
 
-        /* 터치 영역 레이어 */
         .click-zone {
             position: fixed; top: 0; bottom: 0; width: 50%; z-index: 5;
-            cursor: pointer;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
         }
         #left-zone { left: 0; }
         #right-zone { right: 0; }
 
         #display-container {
             display: flex; align-items: center; justify-content: center;
-            width: 100%; gap: clamp(10px, 5vw, 40px);
+            width: 100%; gap: clamp(20px, 8vw, 60px);
             z-index: 1;
         }
 
         .char-unit {
             display: flex; flex-direction: column; align-items: center;
             justify-content: center; text-align: center;
-            transition: all 0.3s ease-in-out;
-            min-width: 120px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            min-width: 140px;
         }
 
-        /* 선명한 중앙 글자와 맥동하는 후광 */
         #current-char {
-            font-size: clamp(4rem, 22vw, 10rem);
+            font-size: clamp(4rem, 25vw, 12rem);
             font-weight: 700;
             opacity: 1;
-            transform: scale(1.15);
-            filter: drop-shadow(0 0 15px var(--halo-color));
-            animation: halo-pulse 3s infinite ease-in-out;
+            filter: drop-shadow(0 0 20px var(--halo-color));
+            animation: halo-pulse 4s infinite ease-in-out;
         }
 
         @keyframes halo-pulse {
-            0%, 100% { filter: drop-shadow(0 0 15px var(--halo-color)); }
-            50% { filter: drop-shadow(0 0 35px var(--halo-color)); }
+            0%, 100% { filter: drop-shadow(0 0 15px var(--halo-color)); transform: scale(1.1); }
+            50% { filter: drop-shadow(0 0 40px var(--halo-color)); transform: scale(1.15); }
         }
 
         .side-char {
-            font-size: clamp(2rem, 11vw, 5rem);
-            opacity: 0.15;
-            transform: scale(0.85);
+            font-size: clamp(2rem, 12vw, 6rem);
+            opacity: 0.1;
+            transform: scale(0.8);
         }
 
         ruby { ruby-position: under; }
         rt {
-            font-size: 0.25em; color: rgba(255,255,255,0.4);
-            font-weight: 400; padding-top: 0.5rem;
+            font-size: 0.28em; color: rgba(255,255,255,0.3);
+            font-weight: 400; padding-top: 1rem; letter-spacing: 0.1em;
         }
-        #current-char rt { color: var(--accent-color); opacity: 1; }
+        #current-char rt { color: var(--accent-color); opacity: 1; text-shadow: 0 0 5px var(--halo-color); }
 
+        /* 구절 구분 원 디자인 */
         .circle {
-            width: 45px; height: 45px;
-            border: 3px solid var(--accent-color); border-radius: 50%;
-            box-shadow: 0 0 15px var(--halo-color);
+            width: 30px; height: 30px;
+            border: 2px solid var(--accent-color); border-radius: 50%;
+            opacity: 0.6;
         }
 
         .progress-container {
-            position: fixed; top: 0; width: 100%; height: 4px;
-            background: rgba(255,255,255,0.1); z-index: 10;
+            position: fixed; top: 0; width: 100%; height: 5px;
+            background: rgba(255,255,255,0.05); z-index: 10;
         }
-        .progress { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.3s; }
+        .progress { height: 100%; background: linear-gradient(90deg, transparent, var(--accent-color)); width: 0%; transition: width 0.3s; }
 
         #counter {
-            position: fixed; bottom: 30px; right: 30px;
-            font-size: 1.1rem; color: var(--accent-color); font-weight: bold;
-            opacity: 0.5; z-index: 10;
+            position: fixed; bottom: 40px; right: 40px;
+            font-size: 1.2rem; color: var(--accent-color); font-weight: 300;
+            opacity: 0.4; z-index: 10; font-variant-numeric: tabular-nums;
         }
     </style>
 </head>
@@ -103,31 +102,23 @@
         <div id="next-char" class="char-unit side-char"></div>
     </div>
 
-    <div id="counter">0</div>
+    <div id="counter">0 / 270</div>
 
     <script>
-        // [검수완료] 한글이 완전히 제거된 정전 한자 데이터
         const fullRawText = "摩訶般若波羅蜜多心經 觀自在菩薩 行深般若波羅蜜多時 照見五蘊皆空 度一切苦厄 舍利子 色不異空 空不異色 色即是空 空即是色 受想行識 亦復如是 舍利子 是諸法空相 不生不滅 不垢不淨 不增不減 是故 空中無色 無受想行識 無眼耳鼻舌身意 無色聲香味觸法 無眼界 乃至 無意識界 無無明 亦無無明盡 乃至 無老死 亦無老死盡 無苦集滅道 無智亦無得 以無所得故 菩提薩埵 依般若波羅蜜多故 心無罣礙 無罣礙故 無有恐怖 遠離顛倒夢想 究竟涅槃 三世諸佛 依般若波羅蜜多故 得阿耨多羅三藐三菩提 故知般若波羅蜜多 是大神咒 是大明咒 是無上咒 是無等等咒 能除一切苦 真實不虛 故說般若波羅蜜多咒 即說咒曰 揭諦揭諦 波羅揭諦 波羅僧揭諦 菩提薩婆訶";
-        
         const kSoundBase = "마하반야바라밀다심경 관자재보살 행심반야바라밀다시 조견오온개공 도일체고액 사리자 색불이공 공불이색 색즉시공 공즉시색 수상행식 역부여시 사리자 시제법공상 불생불멸 불구부정 부증불감 시고 공중무색 무수상행식 무안이비설신이 무색성향미촉법 무안계 내지 무의식계 무무명 역무무명진 내지 무노사 역무노사진 무고집멸도 무지역무득 이무소득고 보리살타 의반야바라밀다고 심무가애 무가애고 무유공포 원리전도몽상 구경열반 삼세제불 의반야바라밀다고 득아뇩다라삼먁삼보리 고지반야바라밀다 시대신주 시대명주 시무상주 시무등등주 능제일체고 진실불허 고설반야바라밀다주 즉설주왈 아제아제 바라아제 바라승아제 모지사바하";
 
-        // 데이터 정제 로직
         const hChars = fullRawText.split("");
         const kChars = kSoundBase.replace(/\s/g, "").split("");
         
         let currentIndex = -1;
-
-        function getRealCharCount(index) {
-            if (index < 0) return 0;
-            return hChars.slice(0, index + 1).join("").replace(/\s/g, "").length;
-        }
+        const totalActualChars = hChars.filter(c => c !== " ").length;
 
         function getCharHTML(index) {
             if (index < 0 || index >= hChars.length) return "";
             const h = hChars[index];
             if (h === " ") return '<div class="circle"></div>';
             
-            // 실 글자 인덱스 추출 및 한글 매칭
             const textBefore = hChars.slice(0, index).join("").replace(/\s/g, "");
             const k = kChars[textBefore.length] || "";
             return `<ruby>${h}<rt>${k}</rt></ruby>`;
@@ -138,6 +129,8 @@
             if (nextIndex < -1 || nextIndex >= hChars.length) return;
             currentIndex = nextIndex;
             render();
+            // 진동 피드백 (모바일 지원 기기)
+            if (window.navigator.vibrate) window.navigator.vibrate(5);
         }
 
         function render() {
@@ -151,13 +144,15 @@
                 prevDiv.innerHTML = "";
                 currDiv.innerHTML = "시작";
                 nextDiv.innerHTML = getCharHTML(0);
-                counterDiv.innerText = "0";
+                counterDiv.innerText = `0 / ${totalActualChars}`;
                 progressBar.style.width = "0%";
             } else {
                 prevDiv.innerHTML = getCharHTML(currentIndex - 1);
                 currDiv.innerHTML = getCharHTML(currentIndex);
                 nextDiv.innerHTML = getCharHTML(currentIndex + 1);
-                counterDiv.innerText = getRealCharCount(currentIndex);
+                
+                const currentCount = hChars.slice(0, currentIndex + 1).join("").replace(/\s/g, "").length;
+                counterDiv.innerText = `${currentCount} / ${totalActualChars}`;
                 progressBar.style.width = ((currentIndex + 1) / hChars.length * 100) + "%";
             }
         }
